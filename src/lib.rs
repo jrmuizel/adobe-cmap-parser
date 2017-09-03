@@ -16,7 +16,8 @@ pub enum Value {
     Integer(i64),
     Array(Vec<Value>),
     Operator(String),
-    Boolean(bool)
+    Boolean(bool),
+    Dictionary(HashMap<String, Value>),
 }
 
 fn hex_char() -> Parser<u8, u8> {
@@ -107,6 +108,16 @@ fn space() -> Parser<u8, ()> {
     ).repeat(0..).discard()
 }
 
+// Dictionaries are not mentioned in the CMap spec but are produced by software like Cairo and Skia and supported other by readers
+fn dictionary() -> Parser<u8, HashMap<String, Value>> {
+    let entry = name() - space() + call(value);
+    let entries = seq(b"<<") * space() * entry.repeat(0..) - seq(b">>");
+    entries.map(|entries| entries.into_iter().fold(
+        HashMap::new(),
+        |mut dict: HashMap<String, Value>, (key, value)| { dict.insert(String::from_utf8(key).unwrap(), value); dict }
+    ))
+}
+
 fn hexadecimal_string() -> Parser<u8, Vec<u8>> {
     sym(b'<') * hex_char().repeat(0..) - sym(b'>')
 }
@@ -123,6 +134,7 @@ fn value() -> Parser<u8, Value> {
     | name().map(|v| Value::Name(v))
     | operator().map(|v| Value::Operator(v))
     | literal_string().map(|v| Value::LiteralString(v))
+    | dictionary().map(|v| Value::Dictionary(v))
     | hexadecimal_string().map(|v| Value::LiteralString(v))
     | array().map(|v| Value::Array(v))
     ) - content_space()
