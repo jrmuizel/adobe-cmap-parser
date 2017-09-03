@@ -1,5 +1,5 @@
-extern crate cmap;
-use cmap::*;
+extern crate adobe_cmap_parser;
+use adobe_cmap_parser::*;
 use std::fs::File;
 use std::io::{Read, BufReader};
 use std::path::Path;
