@@ -164,7 +164,7 @@ fn as_code(str: &[u8]) -> u32 {
     code
 }
 
-pub fn get_unicode_map(input: &[u8]) -> Result<HashMap<u32, u32>, &'static str> {
+pub fn get_unicode_map(input: &[u8]) -> Result<HashMap<u32, Vec<u8>>, &'static str> {
     let lexed = parse(&input).expect("failed to parse");
 
     let mut i = 0;
@@ -180,7 +180,7 @@ pub fn get_unicode_map(input: &[u8]) -> Result<HashMap<u32, u32>, &'static str> 
                             let char_code = if let &Value::LiteralString(ref s) = &lexed[i] { Ok(s) } else { Err("beginbfchar exected hexstring") }?;
                             let uni_code = if let &Value::LiteralString(ref s) = &lexed[i+1] { Ok(s) } else { Err("beginbfchar exected hexstring") }?;
                             //let char_code =
-                            map.insert(as_code(char_code), as_code(uni_code));
+                            map.insert(as_code(char_code), uni_code.clone());
                             i += 2;
                         }
                         i += 1;
@@ -193,11 +193,13 @@ pub fn get_unicode_map(input: &[u8]) -> Result<HashMap<u32, u32>, &'static str> 
                             let upper_code = if let &Value::LiteralString(ref s) = &lexed[i+1] { Ok(as_code(s)) } else { Err("beginbfrange exected hexstring") }?;
                             match &lexed[i+2] {
                                 &Value::LiteralString(ref start) => {
-                                    let mut unicode = as_code(start);
+                                    let mut unicode = start.clone();
+                                    let n = unicode.len() - 1;
+
                                     // inclusive ranges would be nice
                                     for c in lower_code..upper_code+1 {
-                                        map.insert(c, unicode);
-                                        unicode += 1;
+                                        map.insert(c, unicode.clone());
+                                        unicode[n] += 1;
                                     }
                                 }
                                 &Value::Array(ref codes) => {
@@ -207,7 +209,7 @@ pub fn get_unicode_map(input: &[u8]) -> Result<HashMap<u32, u32>, &'static str> 
                                         return Err("bad length of array");
                                     }
                                     for c in lower_code..upper_code+1 {
-                                        map.insert(c, if let &Value::LiteralString(ref s) = &codes[i] { Ok(as_code(s)) } else { Err("beginbfrange exected hexstring") }?);
+                                        map.insert(c, if let &Value::LiteralString(ref s) = &codes[i] { Ok(s.clone()) } else { Err("beginbfrange exected hexstring") }?);
                                         i += 1;
                                     }
                                 }
