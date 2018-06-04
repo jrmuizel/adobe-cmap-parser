@@ -198,8 +198,9 @@ pub fn get_unicode_map(input: &[u8]) -> Result<HashMap<u32, Vec<u8>>, &'static s
 
                                     // inclusive ranges would be nice
                                     for c in lower_code..upper_code+1 {
+                                        let mut unicode = unicode.clone();
                                         unicode[n] += (c - lower_code) as u8;
-                                        map.insert(c, unicode.clone());
+                                        map.insert(c, unicode);
                                     }
                                 }
                                 &Value::Array(ref codes) => {
