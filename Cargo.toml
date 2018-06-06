@@ -1,7 +1,7 @@
 [package]
 authors = ["Jeff Muizelaar <jmuizelaar@mozilla.com>"]
 name = "adobe-cmap-parser"
-version = "0.3.2"
+version = "0.3.3"
 license = "MIT"
 documentation = "https://docs.rs/crate/adobe-cmap-parser/"
 description = "A library to parse Adobe CMap files"
