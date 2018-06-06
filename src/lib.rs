@@ -119,7 +119,7 @@ fn dictionary() -> Parser<u8, HashMap<String, Value>> {
 }
 
 fn hexadecimal_string() -> Parser<u8, Vec<u8>> {
-    sym(b'<') * hex_char().repeat(0..) - sym(b'>')
+    sym(b'<') * (space() * hex_char()).repeat(0..) - (space() * sym(b'>'))
 }
 
 fn eol() -> Parser<u8, u8> {
