@@ -232,8 +232,8 @@ pub fn get_unicode_map(input: &[u8]) -> Result<HashMap<u32, Vec<u8>>, &'static s
 }
 #[derive(Debug)]
 pub struct ByteMapping {
-    codespace: Vec<(u32, u32)>,
-    cid: Vec<(u32, u32)>,
+    pub codespace: Vec<(u32, u32)>,
+    pub cid: Vec<(u32, u32)>,
 }
 
 pub fn get_byte_mapping(input: &[u8]) -> Result<ByteMapping, &'static str> {
