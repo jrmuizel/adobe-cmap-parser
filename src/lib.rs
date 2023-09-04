@@ -230,6 +230,53 @@ pub fn get_unicode_map(input: &[u8]) -> Result<HashMap<u32, Vec<u8>>, &'static s
     Ok(map)
 
 }
+#[derive(Debug)]
+pub struct ByteMapping {
+    codespace: Vec<(u32, u32)>,
+    cid: Vec<(u32, u32)>,
+}
+
+pub fn get_byte_mapping(input: &[u8]) -> Result<ByteMapping, &'static str> {
+    let lexed = parse(&input).expect("failed to parse");
+
+    let mut i = 0;
+    let mut result = ByteMapping { codespace: Vec::new(), cid: Vec::new() };
+    while i < lexed.len() {
+        match lexed[i] {
+            Value::Operator(ref o) => {
+                match o.as_ref() {
+                    "begincodespacerange" => {
+                        let count = if let &Value::Integer(ref c) = &lexed[i-1] { Ok(*c) } else { Err("begincodespacerange exected int") }?;
+                        i += 1;
+                        for _ in 0..count {
+                            let start = if let &Value::LiteralString(ref s) = &lexed[i] { Ok(s) } else { Err("begincodespacerange exected hexstring") }?;
+                            let end = if let &Value::LiteralString(ref s) = &lexed[i+1] { Ok(s) } else { Err("begincodespacerange exected hexstring") }?;
+                            result.codespace.push((as_code(start), as_code(end)));
+                            i += 2;
+                        }
+                        i += 1;
+                    }
+                    "begincidrange" => {
+                        let count = if let &Value::Integer(ref c) = &lexed[i-1] { Ok(*c) } else { Err("begincidrange exected int") }?;
+                        i += 1;
+                        for _ in 0..count {
+                            let start = if let &Value::LiteralString(ref s) = &lexed[i] { Ok(s) } else { Err("begincidrange exected hexstring") }?;
+                            let end = if let &Value::LiteralString(ref s) = &lexed[i+1] { Ok(s) } else { Err("begincidrange exected hexstring") }?;
+                            result.cid.push((as_code(start), as_code(end)));
+                            i += 2;
+                        }
+                        i += 1;
+                    }
+                    _ => { i += 1; }
+                }
+
+            }
+            _ => { i += 1; }
+        }
+    }
+    Ok(result)
+
+}
 
 
 #[cfg(test)]
