@@ -193,7 +193,7 @@ pub fn get_unicode_map(input: &[u8]) -> Result<HashMap<u32, Vec<u8>>, &'static s
                             let upper_code = if let &Value::LiteralString(ref s) = &lexed[i+1] { Ok(as_code(s)) } else { Err("beginbfrange exected hexstring") }?;
                             match &lexed[i+2] {
                                 &Value::LiteralString(ref start) => {
-                                    let mut unicode = start.clone();
+                                    let unicode = start.clone();
                                     let n = unicode.len() - 1;
 
                                     // inclusive ranges would be nice
