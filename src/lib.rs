@@ -230,10 +230,38 @@ pub fn get_unicode_map(input: &[u8]) -> Result<HashMap<u32, Vec<u8>>, &'static s
     Ok(map)
 
 }
+
+fn as_code_range(start_chars: &Vec<u8>, end_chars: &Vec<u8>) -> CodeRange {
+    let mut start = 0;
+    let mut end = 0;
+    assert!(start_chars.len() == end_chars.len());
+    for i in 0..start_chars.len() {
+        start = (start << 8) | (start_chars[i] as u32);
+        end = (end << 8) | (end_chars[i] as u32);
+    }
+    let width = start_chars.len() as u32 / 2;
+    CodeRange { start, end, width }
+}
+
+#[derive(Debug)]
+pub struct CodeRange {
+    pub width: u32,
+    pub start: u32,
+    pub end: u32,
+}
+
+#[derive(Debug)]
+pub struct CIDRange {
+    pub src_code_lo: u32,
+    pub src_code_hi: u32,
+    #[allow(non_snake_case)]
+    pub dst_CID_lo: u32,
+}
+
 #[derive(Debug)]
 pub struct ByteMapping {
-    pub codespace: Vec<(u32, u32)>,
-    pub cid: Vec<(u32, u32)>,
+    pub codespace: Vec<CodeRange>,
+    pub cid: Vec<CIDRange>,
 }
 
 pub fn get_byte_mapping(input: &[u8]) -> Result<ByteMapping, &'static str> {
@@ -251,7 +279,7 @@ pub fn get_byte_mapping(input: &[u8]) -> Result<ByteMapping, &'static str> {
                         for _ in 0..count {
                             let start = if let &Value::LiteralString(ref s) = &lexed[i] { Ok(s) } else { Err("begincodespacerange exected hexstring") }?;
                             let end = if let &Value::LiteralString(ref s) = &lexed[i+1] { Ok(s) } else { Err("begincodespacerange exected hexstring") }?;
-                            result.codespace.push((as_code(start), as_code(end)));
+                            result.codespace.push(as_code_range(start, end));
                             i += 2;
                         }
                         i += 1;
@@ -262,7 +290,8 @@ pub fn get_byte_mapping(input: &[u8]) -> Result<ByteMapping, &'static str> {
                         for _ in 0..count {
                             let start = if let &Value::LiteralString(ref s) = &lexed[i] { Ok(s) } else { Err("begincidrange exected hexstring") }?;
                             let end = if let &Value::LiteralString(ref s) = &lexed[i+1] { Ok(s) } else { Err("begincidrange exected hexstring") }?;
-                            result.cid.push((as_code(start), as_code(end)));
+                            let offset = if let &Value::Integer(ref s) = &lexed[i+2] { Ok(s) } else { Err("begincidrange exected int") }?;
+                            result.cid.push(CIDRange { src_code_lo: as_code(start), src_code_hi: as_code(end), dst_CID_lo: *offset as u32 });
                             i += 2;
                         }
                         i += 1;
@@ -298,7 +327,7 @@ mod tests {
     }
     #[test]
     fn it_works() {
-        let f = File::open("example").unwrap();
+        let f = File::open("examples/Identity-V").unwrap();
         let mut f = BufReader::new(f);
         let mut contents = Vec::new();
         f.read_to_end(&mut contents);
