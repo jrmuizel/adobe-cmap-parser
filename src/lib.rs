@@ -164,6 +164,7 @@ fn as_code(str: &[u8]) -> u32 {
     code
 }
 
+/// Return a mapping from character codes to Unicode character sequences expressed in UTF-16BE encoding.
 pub fn get_unicode_map(input: &[u8]) -> Result<HashMap<u32, Vec<u8>>, &'static str> {
     let lexed = parse(&input).expect("failed to parse");
 
@@ -193,14 +194,24 @@ pub fn get_unicode_map(input: &[u8]) -> Result<HashMap<u32, Vec<u8>>, &'static s
                             let upper_code = if let &Value::LiteralString(ref s) = &lexed[i+1] { Ok(as_code(s)) } else { Err("beginbfrange exected hexstring") }?;
                             match &lexed[i+2] {
                                 &Value::LiteralString(ref start) => {
-                                    let unicode = start.clone();
-                                    let n = unicode.len() - 1;
-
-                                    // inclusive ranges would be nice
-                                    for c in lower_code..upper_code+1 {
-                                        let mut unicode = unicode.clone();
-                                        unicode[n] += (c - lower_code) as u8;
-                                        map.insert(c, unicode);
+                                    match start.len() {
+                                        4 => {
+                                            let val = as_code(start);
+                                            for c in lower_code..=upper_code {
+                                                let code = val + (c - lower_code);
+                                                map.insert(c, code.to_be_bytes().to_vec());
+                                            }
+                                        }
+                                        2 => {
+                                            let val: u16 = as_code(start) as u16;
+                                            for c in lower_code..=upper_code {
+                                                let code = val + (c - lower_code) as u16;
+                                                map.insert(c, code.to_be_bytes().to_vec());
+                                            }
+                                        }
+                                        _ => {
+                                            panic!("bad length of hexstring");
+                                        }
                                     }
                                 }
                                 &Value::Array(ref codes) => {
@@ -209,7 +220,7 @@ pub fn get_unicode_map(input: &[u8]) -> Result<HashMap<u32, Vec<u8>>, &'static s
                                     if (upper_code - lower_code + 1) as usize != codes.len() {
                                         return Err("bad length of array");
                                     }
-                                    for c in lower_code..upper_code+1 {
+                                    for c in lower_code..=upper_code {
                                         map.insert(c, if let &Value::LiteralString(ref s) = &codes[i] { Ok(s.clone()) } else { Err("beginbfrange exected hexstring") }?);
                                         i += 1;
                                     }
