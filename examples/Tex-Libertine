@@ -1,0 +1,68 @@
+%!PS-Adobe-3.0 Resource-CMap
+%%DocumentNeededResources: ProcSet (CIDInit)
+%%IncludeResource: ProcSet (CIDInit)
+%%BeginResource: CMap (TeX-LibertineMathMI-builtin-0)
+%%Title: (TeX-LibertineMathMI-builtin-0 TeX LibertineMathMI-builtin 0)
+%%Version: 1.000
+%%EndComments
+/CIDInit /ProcSet findresource begin
+12 dict begin
+begincmap
+/CIDSystemInfo
+<< /Registry (TeX)
+/Ordering (LibertineMathMI-builtin)
+/Supplement 0
+>> def
+/CMapName /TeX-LibertineMathMI-builtin-0 def
+/CMapType 2 def
+1 begincodespacerange
+<00> <FF>
+endcodespacerange
+12 beginbfrange
+<03> <07> <0300>
+<08> <0A> <0306>
+<0E> <0F> <20DB>
+<13> <14> <2126>
+<16> <49> <D835DC34>
+<50> <51> <D835DEF6>
+<52> <62> <D835DEF9>
+<63> <73> <D835DF0B>
+<79> <7A> <D835DEA4>
+<7B> <7C> <D835DC63>
+<7F> <88> <0030>
+<8A> <93> <0030>
+endbfrange
+26 beginbfchar
+<00> <00B0>
+<01> <019B>
+<02> <01B5>
+<0B> <030A>
+<0C> <030C>
+<0D> <03F6>
+<10> <2107>
+<11> <210E>
+<12> <2113>
+<15> <212B>
+<4A> <D835DEE5>
+<4B> <D835DEE9>
+<4C> <D835DEEC>
+<4D> <D835DEEF>
+<4E> <D835DEF1>
+<4F> <D835DEF4>
+<74> <019B>
+<75> <210F>
+<76> <210F>
+<77> <019B>
+<78> <019B>
+<7D> <D835DF08>
+<7E> <D835DC66>
+<89> <D835DEE4>
+<94> <002E>
+<95> <002C>
+endbfchar
+endcmap
+CMapName currentdict /CMap defineresource pop
+end
+end
+%%EndResource
+%%EOF
