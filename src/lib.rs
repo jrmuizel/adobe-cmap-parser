@@ -149,7 +149,7 @@ fn array() -> Parser<u8, Vec<Value>> {
 
 fn file() -> Parser<u8,Vec<Value>>
 {
-    ( comment().repeat(0..) * content_space() * value()).repeat(1..)
+    ( comment().repeat(0..) * content_space() * value()).repeat(0..)
 }
 
 pub fn parse(input: &[u8]) -> Result<Vec<Value>, pom::Error> {
