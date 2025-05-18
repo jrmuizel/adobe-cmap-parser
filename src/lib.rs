@@ -303,7 +303,7 @@ pub fn get_byte_mapping(input: &[u8]) -> Result<ByteMapping, &'static str> {
                             let end = if let &Value::LiteralString(ref s) = &lexed[i+1] { Ok(s) } else { Err("begincidrange exected hexstring") }?;
                             let offset = if let &Value::Integer(ref s) = &lexed[i+2] { Ok(s) } else { Err("begincidrange exected int") }?;
                             result.cid.push(CIDRange { src_code_lo: as_code(start), src_code_hi: as_code(end), dst_CID_lo: *offset as u32 });
-                            i += 2;
+                            i += 3;
                         }
                         i += 1;
                     }
