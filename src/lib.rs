@@ -166,7 +166,7 @@ fn as_code(str: &[u8]) -> u32 {
 
 /// Return a mapping from character codes to Unicode character sequences expressed in UTF-16BE encoding.
 pub fn get_unicode_map(input: &[u8]) -> Result<HashMap<u32, Vec<u8>>, &'static str> {
-    let lexed = parse(&input).expect("failed to parse");
+    let lexed = parse(&input).map_err(|_| "failed to parse")?;
 
     let mut i = 0;
     let mut map = HashMap::new();
@@ -209,8 +209,19 @@ pub fn get_unicode_map(input: &[u8]) -> Result<HashMap<u32, Vec<u8>>, &'static s
                                                 map.insert(c, code.to_be_bytes().to_vec());
                                             }
                                         }
+                                        n if n > 4 && n % 2 == 0 => {
+                                            // Multi-unit destination such as a ligature (<006600660069> = "ffi"):
+                                            // only the last code unit varies across the range.
+                                            let (prefix, last) = start.split_at(n - 2);
+                                            let val: u16 = as_code(last) as u16;
+                                            for c in lower_code..=upper_code {
+                                                let mut dst = prefix.to_vec();
+                                                dst.extend_from_slice(&val.wrapping_add((c - lower_code) as u16).to_be_bytes());
+                                                map.insert(c, dst);
+                                            }
+                                        }
                                         _ => {
-                                            panic!("bad length of hexstring");
+                                            // Odd-length or empty destinations can't be UTF-16BE; skip the range.
                                         }
                                     }
                                 }
@@ -276,7 +287,7 @@ pub struct ByteMapping {
 }
 
 pub fn get_byte_mapping(input: &[u8]) -> Result<ByteMapping, &'static str> {
-    let lexed = parse(&input).expect("failed to parse");
+    let lexed = parse(&input).map_err(|_| "failed to parse")?;
 
     let mut i = 0;
     let mut result = ByteMapping { codespace: Vec::new(), cid: Vec::new() };
@@ -322,6 +333,8 @@ pub fn get_byte_mapping(input: &[u8]) -> Result<ByteMapping, &'static str> {
 #[cfg(test)]
 mod tests {
     use parse;
+    use get_unicode_map;
+    use get_byte_mapping;
     use std::fs::File;
     use std::io::BufReader;
     use std::io::Read;
@@ -346,5 +359,26 @@ mod tests {
         //for line in f.lines() {
         do_parse(&contents);
 
+    }
+
+    #[test]
+    fn bfrange_odd_length_destination() {
+        // pdfTeX can emit 1-byte destinations; this used to panic with "bad length of hexstring".
+        let map = get_unicode_map(b"2 beginbfrange\n<C5> <D6> <C5>\n<41> <42> <0041>\nendbfrange").unwrap();
+        assert!(!map.contains_key(&0xC5));
+        assert_eq!(map[&0x42], vec![0x00, 0x42]);
+    }
+
+    #[test]
+    fn bfrange_multi_unit_destination() {
+        let map = get_unicode_map(b"1 beginbfrange\n<1E> <1F> <006600660069>\nendbfrange").unwrap();
+        assert_eq!(map[&0x1E], vec![0x00, 0x66, 0x00, 0x66, 0x00, 0x69]);
+        assert_eq!(map[&0x1F], vec![0x00, 0x66, 0x00, 0x66, 0x00, 0x6A]);
+    }
+
+    #[test]
+    fn unparsable_input_is_an_error() {
+        assert!(get_unicode_map(b"<<").is_err());
+        assert!(get_byte_mapping(b"<<").is_err());
     }
 }
