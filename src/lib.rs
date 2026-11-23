@@ -152,8 +152,14 @@ fn file() -> Parser<u8,Vec<Value>>
     ( comment().repeat(0..) * content_space() * value()).repeat(1..)
 }
 
+/// Some PDF producers write a UTF-8 byte order mark at the start of a CMap
+/// stream. It is no part of the CMap.
+fn without_byte_order_mark(input: &[u8]) -> &[u8] {
+    input.strip_prefix(b"\xEF\xBB\xBF").unwrap_or(input)
+}
+
 pub fn parse(input: &[u8]) -> Result<Vec<Value>, pom::Error> {
-    file().parse(&mut DataInput::new(input))
+    file().parse(&mut DataInput::new(without_byte_order_mark(input)))
 }
 
 fn as_code(str: &[u8]) -> u32 {
@@ -166,7 +172,7 @@ fn as_code(str: &[u8]) -> u32 {
 
 /// Return a mapping from character codes to Unicode character sequences expressed in UTF-16BE encoding.
 pub fn get_unicode_map(input: &[u8]) -> Result<HashMap<u32, Vec<u8>>, &'static str> {
-    let lexed = parse(&input).expect("failed to parse");
+    let lexed = parse(&input).map_err(|_| "failed to parse")?;
 
     let mut i = 0;
     let mut map = HashMap::new();
@@ -276,7 +282,7 @@ pub struct ByteMapping {
 }
 
 pub fn get_byte_mapping(input: &[u8]) -> Result<ByteMapping, &'static str> {
-    let lexed = parse(&input).expect("failed to parse");
+    let lexed = parse(&input).map_err(|_| "failed to parse")?;
 
     let mut i = 0;
     let mut result = ByteMapping { codespace: Vec::new(), cid: Vec::new() };
@@ -346,5 +352,22 @@ mod tests {
         //for line in f.lines() {
         do_parse(&contents);
 
+    }
+
+    const BFCHAR: &[u8] = b"/CIDInit /ProcSet findresource begin\n12 dict begin\nbegincmap\n1 begincodespacerange\n<0000><FFFF>\nendcodespacerange\n1 beginbfchar\n<0026><0043>\nendbfchar\nendcmap\nend\nend\n";
+
+    #[test]
+    fn a_leading_byte_order_mark_is_skipped() {
+        let mut contents = b"\xEF\xBB\xBF".to_vec();
+        contents.extend_from_slice(BFCHAR);
+        let with_mark = ::get_unicode_map(&contents).unwrap();
+        assert_eq!(with_mark.get(&0x26), Some(&vec![0x00, 0x43]));
+        assert_eq!(with_mark, ::get_unicode_map(BFCHAR).unwrap());
+    }
+
+    #[test]
+    fn unparseable_input_is_an_error() {
+        assert!(::get_unicode_map(b"").is_err());
+        assert!(::get_byte_mapping(b"").is_err());
     }
 }
